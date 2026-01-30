@@ -1,0 +1,33 @@
+run:
+  output_dir: "tests/test_output"
+  diagnostics: true
+  visualize: false
+  vis_name_metadata_column: "Platybrowser name"
+
+atlas:
+  adata_path: "data/scrnaseq_atlas/atlas_6dpf.h5ad"
+  gene_metadata_path: "data/scrnaseq_atlas/genes_metadata.tsv"
+  cluster_column: "broad.types"
+  normalize_expression: true # apply sc.pp.normalize_total(adata, target_sum=1e4) and sc.pp.log1p(adata)
+  layer: "RNA_counts"
+  metadata_column: "XLOC"
+
+spatial_data:
+  - name: "smfish"
+    df_path: "data/smfish/expression_matrix_aggregated_spots.tsv"
+    metadata_column: "Platybrowser name"
+    bin_thresh: 20
+    apply_norm: false
+    pmin: 0
+    pmax: 99
+  - name: "prospr"
+    df_path: "data/smfish/prospr_genes_nuclei.tsv"
+    metadata_column: "Platybrowser name"
+    bin_thresh: 0.1
+    apply_norm: false
+    pmin: 0
+    pmax: 99
+
+expression_profiles:
+  weighted: true
+  profile_constant: 0.001
