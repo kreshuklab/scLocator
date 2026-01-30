@@ -1,0 +1,15 @@
+[project]
+name = "sclocator"
+version = "1.0.0"
+description = "Package for mapping clusters annotated in scRNAseq to spatial transcriptomics data"
+requires-python = ">=3.6"
+dependencies = [
+    "click>=8.1",
+]
+
+[project.scripts]
+sclocator = "sclocator.run_mapping:main"
+
+[build-system]
+requires = ["flit_core<4"]
+build-backend = "flit_core.buildapi"
