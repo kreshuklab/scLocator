@@ -1,5 +1,6 @@
 import logging
 
+
 def validate_spatial_source_config(spatial_data_source):
     logging.info("Validate config for spatial data")
     try:
@@ -84,3 +85,80 @@ def validate_spatial_source_config(spatial_data_source):
     spatial_data_source["pmin"] = pmax
 
     return spatial_data_source
+
+
+def validate_atlas_config(atlas_config):
+    logging.info("Validate config for scRNAseq atlas")
+    try:
+        if not type(atlas_config["adata_path"]) is str:
+            raise ValueError
+
+    except KeyError:
+        logging.error("adata_path is an obligatory parameter")
+        raise
+
+    except ValueError:
+        logging.error(f"adata_path is {atlas_config['adata_path']}, should be a string")
+        raise
+
+    try:
+        if not type(atlas_config["cluster_column"]) is str:
+            raise ValueError
+
+    except KeyError:
+        logging.error("cluster_column is an obligatory parameter")
+        raise
+
+    except ValueError:
+        logging.error(
+            f"cluster_column is {atlas_config['cluster_column']}, should be a string"
+        )
+        raise
+
+    try:
+        if not type(atlas_config["metadata_column"]) is str:
+            raise ValueError
+
+    except KeyError:
+        logging.error("metadata_column is an obligatory parameter")
+        raise
+
+    except ValueError:
+        logging.error(
+            f"metadata_column is {atlas_config['metadata_column']}, should be a string"
+        )
+        raise
+
+    try:
+        if not type(atlas_config["metadata_column"]) is str:
+            raise ValueError
+
+    except KeyError:
+        logging.error("metadata_column is an obligatory parameter")
+        raise
+
+    except ValueError:
+        logging.error(
+            f"metadata_column is {atlas_config['metadata_column']}, should be a string"
+        )
+        raise
+
+    try:
+        normalize_expression = atlas_config["normalize_expression"]
+
+    except KeyError:
+        atlas_config["normalize_expression"] = False
+
+    try:
+        layer = atlas_config["layer"]
+
+    except KeyError:
+        atlas_config["layer"] = "X"
+
+    try:
+        layer = atlas_config["bin_thresh"]
+
+    except KeyError:
+        atlas_config["bin_thresh"] = "median"
+
+    return atlas_config

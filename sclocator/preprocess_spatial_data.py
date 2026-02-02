@@ -47,7 +47,7 @@ def preprocess_spatial_expr_df(
     apply_norm: bool,
     pmin: float,
     pmax: float,
-    metadata_column: str
+    metadata_column: str,
 ):
     df_expr = pd.read_csv(df_path, sep="\t")
 
@@ -81,7 +81,7 @@ def preprocess_spatial_expr_df(
     logging.info("Normalized expression df stats\n" + repr(df_norm_expr.describe().T))
     logging.info("Binarized expression df stats\n" + repr(df_bin_expr.describe().T))
 
-    if visualize:
+    if False:
         plt.figure(figsize=(10, 1 * len(df_expr.columns)))
         sns.stripplot(df_expr, jitter=0.4, alpha=0.6, orient="h")
         plt.title("Distribution of raw counts")
@@ -131,20 +131,35 @@ def preprocess_spatial_expr_df(
 
 
 def harmonize_gene_names(metadata, expr_df, atlas_col, spatial_col):
-    rename_dict = {spatial: atlas for spatial, atlas in zip(metadata[spatial_col], metadata[atlas_col])}
+    rename_dict = {
+        spatial: atlas
+        for spatial, atlas in zip(metadata[spatial_col], metadata[atlas_col])
+    }
 
-    print(metadata[spatial_col])
-    missing_genes = [col for col in expr_df.columns if not metadata[spatial_col].str.contains(col).any()]
-    logging.warning(f"Genes in spatial source without mapping to scRNAseq atlas: {missing_genes}")
-    columns = [col for col in expr_df.columns if metadata[spatial_col].str.contains(col).any()]
-    
+    missing_genes = [
+        col
+        for col in expr_df.columns
+        if not (col in list(metadata[spatial_col]))
+    ]
+    print(list(metadata[spatial_col]))
+    for col in expr_df.columns:
+        logging.info(col in list(metadata[spatial_col]))
+    logging.warning(
+        f"Genes in spatial source without mapping to scRNAseq atlas: {missing_genes}"
+    )
+    columns = [
+        col for col in expr_df.columns if col in list(metadata[spatial_col])
+    ]
+
     renamed_expr_df = expr_df[columns].copy()
     renamed_expr_df = renamed_expr_df.rename(columns=rename_dict)
 
     return renamed_expr_df
 
 
-def join_spatial_expr_dfs(dfs: List, df_names: List, metadata: pd.DataFrame, atlas_col, gene_name_col: str):
+def join_spatial_expr_dfs(
+    dfs: List, df_names: List, metadata: pd.DataFrame, atlas_col, gene_name_col: str
+):
     # Check that index is the same
     logging.info("\n\n\nJoin spatial dataframes")
     logging.info(f"name\t\tN genes\t\tN cells")
@@ -156,9 +171,12 @@ def join_spatial_expr_dfs(dfs: List, df_names: List, metadata: pd.DataFrame, atl
         merged_df = dfs[0]
         for df in dfs[1:]:
             merged_df = pd.concat([merged_df, df], axis=1, join="inner")
-    
+
     # Group the duplicate columns (with OR)
-    gene_name_dict = {spatial: atlas for spatial, atlas in zip(metadata[atlas_col], metadata[gene_name_col])}
+    gene_name_dict = {
+        spatial: atlas
+        for spatial, atlas in zip(metadata[atlas_col], metadata[gene_name_col])
+    }
     if merged_df.columns.duplicated().any():
         duplicated_columns = merged_df.columns[merged_df.columns.duplicated()]
         logging.info(f"Duplicated columns")
@@ -170,6 +188,3 @@ def join_spatial_expr_dfs(dfs: List, df_names: List, metadata: pd.DataFrame, atl
     logging.info(f"name\t\tN genes\t\tN cells")
     logging.info(f"merged\t{len(merged_df.columns)}\t{len(merged_df)}")
     return merged_df
-
-
-
