@@ -5,17 +5,22 @@ from pathlib import Path
 import logging
 import sys
 import pandas as pd
-
+import numpy as np
+import scanpy as sc
 from sclocator.preprocess_spatial_data import (
     preprocess_spatial_expr_df,
     join_spatial_expr_dfs,
     harmonize_gene_names,
+    calculate_spatial_specificity_weights,
+    calculate_gene_specificity_weights
 )
 from sclocator.config_validation import (
     validate_spatial_source_config,
     validate_atlas_config,
 )
 from sclocator.preprocess_atlas import get_atlas, get_cluster_profiles, visualize_profiles
+from sclocator.bayesian_prob import assign_clusters
+
 
 
 class ClusterMapper:
@@ -53,6 +58,7 @@ class ClusterMapper:
         logging.info(f"Start analysis")
         self.preprocess_data()
         self.create_expression_profiles()
+        self.get_cluster_prob()
 
     def preprocess_data(self):
         self.metadata = pd.read_csv(self.config["run"]["gene_metadata_path"], sep="\t")
@@ -95,18 +101,21 @@ class ClusterMapper:
 
         self.spatial_gene_subset = self.spatial_expr_df.columns
 
-        atlas_config = validate_atlas_config(self.config["atlas"])
-        atlas_config["visualize"] = self.visualize
-        atlas_config["output_dir"] = self.output_dir / "atlas"
-        atlas_config["output_dir"].mkdir(exist_ok=True)
-        atlas_config["metadata"] = self.metadata
-        atlas_config["gene_list"] = self.spatial_gene_subset
-        atlas_config["vis_name_metadata_column"] = self.config["run"][
+        self.atlas_config = validate_atlas_config(self.config["atlas"])
+        self.atlas_config["visualize"] = self.visualize
+        self.atlas_config["output_dir"] = self.output_dir / "atlas"
+        self.atlas_config["output_dir"].mkdir(exist_ok=True)
+        self.atlas_config["metadata"] = self.metadata
+        self.atlas_config["gene_list"] = self.spatial_gene_subset
+        self.atlas_config["vis_name_metadata_column"] = self.config["run"][
             "vis_name_metadata_column"
         ]
-        self.atlas = get_atlas(**atlas_config)
+        self.atlas = get_atlas(**self.atlas_config)
+        # self.atlas = sc.read_h5ad(self.atlas_config["output_dir"] / "scrnaseq_bin_expr.h5ad")
 
         self.spatial_expr_df = self.spatial_expr_df[self.atlas.var.index]
+
+        self.gene_list = self.atlas.var.index
 
     def create_expression_profiles(self):
         output_dir = self.output_dir / "expression_profiles"
@@ -123,7 +132,17 @@ class ClusterMapper:
         visualize_profiles(self.atlas.var.vis_name, self.profiles, output_dir)
 
     def get_cluster_prob(self):
-        pass
+        output_dir_cluster_prob = self.output_dir / "cluster_prob"
+        output_dir_cluster_prob.mkdir(exist_ok=True)
+
+        if self.config["run"]["use_spatial_weights"]:
+            spatial_weights = calculate_spatial_specificity_weights(self.spatial_expr_df)
+            sc_weights = calculate_gene_specificity_weights(self.profiles, self.gene_list)
+            gene_weights = spatial_weights
+        else:
+            gene_weights = np.ones(len(self.gene_list))
+        assign_clusters(self.spatial_expr_df, self.gene_list, self.profiles, output_dir_cluster_prob, self.atlas_config["cluster_column"], gene_weights, False, output_dir_cluster_prob)
+
 
     def visualize_result(self):
         pass

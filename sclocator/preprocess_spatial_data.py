@@ -187,4 +187,70 @@ def join_spatial_expr_dfs(
     logging.info(f"Merged spatial dataframe")
     logging.info(f"name\t\tN genes\t\tN cells")
     logging.info(f"merged\t{len(merged_df.columns)}\t{len(merged_df)}")
+
+    if np.any(merged_df.isna()):
+        logging.warning(f"Merged spatial dataframe has NaNs")
+        merged_df.fillna(0, inplace=True)
+
     return merged_df
+
+
+def calculate_spatial_specificity_weights(
+    spatial_expr_df: pd.DataFrame, min_weight: float = 0.25, max_weight: float = 1.75
+) -> np.ndarray:
+    """
+    Calculates a weight for each gene based on how many nuclei express it.
+    """
+    logging.info("Calculating spatial gene specificity weights...")
+
+    num_genes = spatial_expr_df.shape[1]
+    num_nuclei = spatial_expr_df.shape[0]
+    nuclei_counts = spatial_expr_df.sum(axis=0).to_numpy()
+    ubiquity_score = nuclei_counts / num_nuclei
+    specificity_score = 1 - ubiquity_score
+    spatial_weights = min_weight + specificity_score * (max_weight - min_weight)
+
+    logging.info(
+        f"Spatial weights calculated, ranging from {np.min(spatial_weights):.2f} to {np.max(spatial_weights):.2f}"
+    )
+
+    return spatial_weights
+
+
+def calculate_gene_specificity_weights(
+    profiles: dict,
+    gene_list: list,
+    expression_threshold: float = 0.1,
+    min_weight: float = 0.25,
+    max_weight: float = 1.75,
+) -> np.ndarray:
+    """
+    Calculates a weight for each gene based on its expression specificity across clusters.
+    ... (rest of the docstring) ...
+    """
+    logging.info("Calculating gene specificity weights...")
+
+    num_genes = len(gene_list)
+    num_clusters = len(profiles)
+    profile_matrix = np.array(
+        list(profiles.values())
+    )  # Shape: (num_clusters, num_genes)
+    is_expressed_matrix = profile_matrix > expression_threshold
+    gene_expression_counts = is_expressed_matrix.sum(axis=0)
+
+    # Calculate "ubiquity score" (0 = perfectly specific, 1 = in all clusters)
+    # We use max(1, ...) to avoid division by zero if there's only one cluster
+    ubiquity_score = (gene_expression_counts - 1) / max(1, num_clusters - 1)
+    ubiquity_score = np.clip(ubiquity_score, 0, 1)  # Ensure score is between 0 and 1
+
+    # Invert to get "specificity score" (1 = perfectly specific, 0 = ubiquitous)
+    specificity_score = 1 - ubiquity_score
+
+    # Map specificity score to the desired weight range
+    gene_weights = min_weight + specificity_score * (max_weight - min_weight)
+
+    logging.info(
+        f"Gene weights calculated, ranging from {np.min(gene_weights):.2f} to {np.max(gene_weights):.2f}"
+    )
+
+    return gene_weights, gene_expression_counts

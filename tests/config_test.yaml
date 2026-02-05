@@ -4,6 +4,7 @@ run:
   visualize: false
   vis_name_metadata_column: "Platybrowser name"
   gene_metadata_path: "data/scrnaseq_atlas/genes_metadata.tsv"
+  use_spatial_weights: true
 
 atlas:
   adata_path: "data/scrnaseq_atlas/atlas_6dpf.h5ad"
@@ -28,8 +29,15 @@ spatial_data:
     apply_norm: false
     pmin: 0
     pmax: 99
+  - name: "muscle_ropsin"
+    df_path: "data/smfish/expression_matrix_aggregated_mean.tsv"
+    metadata_column: "Platybrowser name"
+    bin_thresh: 0.05
+    apply_norm: false
+    pmin: 0
+    pmax: 99
 
 expression_profiles:
-  norm_per_gene: true
+  norm_per_gene: false
   base_prob: 0.001
-  delta: 0.0000001
+  delta: 0.00001

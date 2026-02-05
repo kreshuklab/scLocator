@@ -23,9 +23,7 @@ def get_atlas(
 ):
     adata = sc.read_h5ad(adata_path)
     logging.info(adata)
-    logging.info("adata var")
-    logging.info(adata.var.head())
-    logging.info(adata.var_names)
+
 
     if layer != "X":
         adata.layers["counts"] = adata.layers.pop(layer)
@@ -50,8 +48,7 @@ def get_atlas(
         zip(metadata[metadata_column], metadata[vis_name_metadata_column])
     )
 
-    logging.info("var_names")
-    logging.info(adata.var_names)
+
     missing_genes = set(gene_list).difference(set(adata.var_names.to_list()))
     logging.info("Genes present in metadata but missing from the atlas")
     for gene in missing_genes:
@@ -66,14 +63,6 @@ def get_atlas(
     subset_adata.var["vis_name"] = [
         genes_lookup[name] for name in subset_adata.var_names
     ]
-    # subset_adata.var_names = (
-    #     subset_adata.var_names.to_series().map(genes_lookup).tolist()
-    # )
-
-    logging.info("var index")
-    logging.info(subset_adata.var.index)
-    logging.info("Final list of genes in the scRNAseq atlas")
-    # logging.info("\n".join([f"{gene} | {name}" for gene, name in zip(subset_adata.var.index, subset_adata.var_names)]))
 
     if bin_thresh == "median":
         thresholds = []
@@ -154,14 +143,14 @@ def get_cluster_profiles(adata, cluster_column, output_dir, norm_per_gene, base_
         output_dir_minmax.mkdir(parents=True, exist_ok=True)
         visualize_profiles(list(adata.var.vis_name), norm_profiles, output_dir_minmax)
         for key in profiles:
-            profiles[key] = (profiles[key] - min_expr_prob) * (1 - 2 * base_prob) / (max_expr_prob - min_expr_prob) + base_prob
+            # profiles[key] = (profiles[key] - min_expr_prob) * (1 - 2 * base_prob) / (max_expr_prob - min_expr_prob) + base_prob
+            profiles[key] = (profiles[key] - min_expr_prob) * (1 - 0.1 - base_prob) / (max_expr_prob - min_expr_prob) + base_prob
     # Create empty profile for the nuclei where nothing was measured
     profiles["zero"] = np.zeros(adata.shape[1]) + delta
 
     # Create profile that expresses everything for the autofluorescent areas
-    profiles["autofluorescence"] = np.ones(adata.shape[1]) - delta
+    profiles["autofluorescence"] = np.ones(adata.shape[1]) - 0.01
 
-    # INSERTION POINT: SAVE THE PROFILES DICTIONARY
     output_file = output_dir / "profiles_dictionary.pkl"
     try:
         with open(output_file, "wb") as f:
@@ -173,28 +162,6 @@ def get_cluster_profiles(adata, cluster_column, output_dir, norm_per_gene, base_
         logging.error(f"Failed to save cluster profiles via pickle: {e}")
 
     return profiles
-
-
-""" def visualize_profiles(gene_list, profiles, output_dir):
-    n_clusters = len(profiles)
-    fig, axs = plt.subplots(n_clusters, figsize=(12, n_clusters * 2 + 3))
-    # fig.suptitle('Expression profiles of clusters')
-    fig.tight_layout()
-    
-    for i, k in enumerate(profiles):
-        axs[i].set_title(k)
-        axs[i].bar(gene_list, profiles[k])
-        axs[i].set_ylim(0, 1)
-        axs[i].tick_params("x", rotation=90, labelsize=4)
-
-    
-    plt.tight_layout(pad=1.5, h_pad=2)
-
-
-    plt.tight_layout(pad=1.5, h_pad=2)
-
-    plt.savefig(output_dir / "expression_profiles.png", dpi=300)
-    plt.close("all") """
 
 
 def visualize_profiles(gene_list, profiles, output_dir):
