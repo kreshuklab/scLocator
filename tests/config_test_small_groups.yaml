@@ -1,0 +1,43 @@
+run:
+  output_dir: "tests/small_groups_output"
+  diagnostics: true
+  visualize: false
+  vis_name_metadata_column: "Platybrowser name"
+  gene_metadata_path: "data/scrnaseq_atlas/genes_metadata.tsv"
+  use_spatial_weights: true
+
+atlas:
+  adata_path: "data/scrnaseq_atlas/atlas_6dpf.h5ad"
+  cluster_column: "curated_high_res_annotations"
+  normalize_expression: true # apply sc.pp.normalize_total(adata, target_sum=1e4) and sc.pp.log1p(adata)
+  layer: "RNA_counts" # "X" or the name of the layer
+  metadata_column: "XLOC"
+  bin_thresh: "median" # options: "median" or fixed threshold number
+
+spatial_data:
+  - name: "smfish"
+    df_path: "data/smfish/expression_matrix_aggregated_spots.tsv"
+    metadata_column: "Platybrowser name"
+    bin_thresh: 20
+    apply_norm: false
+    pmin: 0
+    pmax: 99
+  - name: "prospr"
+    df_path: "data/smfish/prospr_genes_nuclei.tsv"
+    metadata_column: "Platybrowser name"
+    bin_thresh: 0.1
+    apply_norm: false
+    pmin: 0
+    pmax: 99
+  - name: "muscle_ropsin"
+    df_path: "data/smfish/expression_matrix_aggregated_mean.tsv"
+    metadata_column: "Platybrowser name"
+    bin_thresh: 0.05
+    apply_norm: false
+    pmin: 0
+    pmax: 99
+
+expression_profiles:
+  norm_per_gene: false
+  base_prob: 0.001
+  delta: 0.00001

@@ -6,6 +6,9 @@ import logging
 from pathlib import Path
 import numpy as np
 import pickle
+import seaborn as sns
+
+from sclocator.bayesian_prob import get_cluster_probabilities, visualize_assignment
 
 
 def get_atlas(
@@ -249,3 +252,36 @@ def visualize_profiles(gene_list, profiles, output_dir):
         plt.tight_layout()
         plt.savefig(plot_path, dpi=300)
         plt.close(fig)  # Close the figure to free memory
+
+
+def test_profile_quality(profiles, output_dir, n_samples=10000):
+    confusion_matrix = pd.DataFrame(index=profiles.keys(), columns=profiles.keys())
+    counts = []
+    cluster_names = []
+    for name, profile  in profiles.items():
+        print(name)
+        synthetic_expr_df = pd.DataFrame(np.array([np.random.binomial(1, p, n_samples) for p in profile]).T)
+        print("synthetic expr shape", synthetic_expr_df.shape)
+        
+        result_df = get_cluster_probabilities(profiles, synthetic_expr_df, np.ones(len(profile)))
+
+        safe_name = name.replace(" ", "_").replace("/", "_").replace("\\", "_")
+        visualize_assignment(result_df, output_dir, name=f"heatmap_{safe_name}.png")
+
+        result_df["most probable cluster"] = result_df.idxmax(axis=1)
+
+        counts.append(result_df["most probable cluster"].value_counts() / n_samples)
+        cluster_names.append(name)
+
+    confusion_matrix = pd.concat(counts, keys=cluster_names, axis=1)
+    confusion_matrix = confusion_matrix.fillna(0)
+    confusion_matrix = confusion_matrix.sort_index()
+    confusion_matrix = confusion_matrix.T.sort_index().T
+
+    confusion_matrix.to_csv(output_dir / "confusion_matrix.csv")
+
+    sns.heatmap(confusion_matrix, annot=True, annot_kws={"fontsize":6}, fmt='.2f', cmap="viridis")
+    plt.tight_layout()
+    plt.savefig(output_dir / "confusion_matrix.png", dpi=300)
+    plt.close()
+    

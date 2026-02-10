@@ -5,29 +5,8 @@ import pandas as pd
 import logging
 from pathlib import Path
 import numpy as np
+import seaborn as sns
 
-
-def get_prob(expr: np.ndarray, profile: np.ndarray, gene_weights: np.ndarray) -> float:
-    """
-    Calculates the weighted log-likelihood of an expression vector given a profile.
-    """
-    positive_profile = profile
-    negative_profile = 1 - profile
-    positive_expr = expr
-    negative_expr = 1 - expr
-
-    # Calculate the individual likelihood term for each gene
-    prob_vector = positive_expr * positive_profile + negative_expr * negative_profile
-
-    # Switch to a weighted sum of log-probabilities
-    # Add a small epsilon to prevent errors from log(0)
-    log_likelihoods = np.log(prob_vector + 1e-10)
-
-    # Apply the weights to each gene's log-likelihood
-    weighted_log_likelihood = np.sum(log_likelihoods * gene_weights)
-
-    # This function now returns a single log-likelihood score
-    return weighted_log_likelihood
 
 
 def expr_to_cluster_probability(
@@ -39,10 +18,17 @@ def expr_to_cluster_probability(
     """
     Calculates the posterior probability of a cluster given an expression vector.
     """
-    log_likelihood = get_prob(expr, cluster_profile, gene_weights)
+    prob_vector = get_individual_gene_probabilities(expr, cluster_profile)
+
+    # Switch to a weighted sum of log-probabilities
+    # Add a small epsilon to prevent errors from log(0)
+    log_likelihoods = np.log(prob_vector + 1e-10)
+
+    # Apply the weights to each gene's log-likelihood
+    weighted_log_likelihood = np.sum(log_likelihoods * gene_weights)
 
     # Combine with the prior probability in log-space
-    log_posterior = log_likelihood + np.log(cluster_prior_prob)
+    log_posterior = weighted_log_likelihood + np.log(cluster_prior_prob)
 
     # Return the final probability (not in log-space)
     return np.exp(log_posterior)
@@ -64,17 +50,7 @@ def get_individual_gene_probabilities(expr, profile):
     return prob_vector
 
 
-def assign_clusters(
-    spatial_expr_df,
-    gene_list,
-    profiles,
-    output_dir,
-    cluster_column,
-    gene_weights: np.ndarray,
-    run_diagnostics: bool = False,
-    diagnostics_dir: str | Path = None,
-):
-
+def get_cluster_probabilities(profiles, spatial_expr_df, gene_weights):
     cluster_list = list(profiles.keys())
     result_df = pd.DataFrame(index=spatial_expr_df.index, columns=cluster_list)
 
@@ -94,6 +70,26 @@ def assign_clusters(
             for _, expr in spatial_expr_df.iterrows()
         ]
         result_df[cluster_name] = bayesian_prob
+
+    result_df = result_df.div(result_df.sum(axis=1), axis=0)
+    
+    return result_df
+
+
+def assign_clusters(
+    spatial_expr_df,
+    gene_list,
+    profiles,
+    output_dir,
+    cluster_column,
+    gene_weights: np.ndarray,
+    run_diagnostics: bool = False,
+    diagnostics_dir: str | Path = None,
+):
+
+    cluster_list = list(profiles.keys())
+
+    result_df = get_cluster_probabilities(profiles, spatial_expr_df, gene_weights)
 
     logging.info(f"Highest cluster probaility: {result_df.max()}")
     logging.info(f"Probability sum: {result_df.sum(axis=1)}")
@@ -237,11 +233,19 @@ def assign_clusters(
                     )
 
     # Normalize the probabilities to sum to 1
-    result_df = result_df.div(result_df.sum(axis=1), axis=0)
+    # result_df = result_df.div(result_df.sum(axis=1), axis=0)
 
     logging.info(f"Highest cluster probaility: {result_df.max()}")
     logging.info(f"Probability sum min: {result_df.sum(axis=1).min()}")
 
-    result_df["most probable cluster"] = result_df.idxmax(axis=1)
+    return result_df
 
-    result_df.to_csv(output_dir / "cluster_probability.tsv", sep="\t")
+
+def visualize_assignment(assignment_df, output_dir, name="probability_heatmap.png"):
+    cg = sns.clustermap(assignment_df, col_cluster=False)
+    cg.ax_row_dendrogram.set_visible(False)
+    cg.ax_col_dendrogram.set_visible(False)
+    plt.tight_layout()
+    plt.savefig(output_dir / name, dpi=300)
+    plt.close()
+

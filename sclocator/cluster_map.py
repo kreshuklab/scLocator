@@ -7,6 +7,7 @@ import sys
 import pandas as pd
 import numpy as np
 import scanpy as sc
+
 from sclocator.preprocess_spatial_data import (
     preprocess_spatial_expr_df,
     join_spatial_expr_dfs,
@@ -18,8 +19,9 @@ from sclocator.config_validation import (
     validate_spatial_source_config,
     validate_atlas_config,
 )
-from sclocator.preprocess_atlas import get_atlas, get_cluster_profiles, visualize_profiles
-from sclocator.bayesian_prob import assign_clusters
+from sclocator.preprocess_atlas import get_atlas, get_cluster_profiles, visualize_profiles, test_profile_quality
+from sclocator.bayesian_prob import assign_clusters, visualize_assignment
+
 
 
 
@@ -42,6 +44,9 @@ class ClusterMapper:
 
         self.output_dir = Path(config["run"]["output_dir"])
         self.output_dir.mkdir(exist_ok=True)
+
+        # Increase allowed recursion depth for clustermap
+        sys.setrecursionlimit(100000)
 
         logging.basicConfig(
             level=logging.INFO,
@@ -129,7 +134,11 @@ class ClusterMapper:
             self.config["expression_profiles"]["delta"],
         )
 
+        output_dir_test = output_dir / "profile_qc"
+        output_dir_test.mkdir(exist_ok=True)
+        test_profile_quality(self.profiles, output_dir_test)
         visualize_profiles(self.atlas.var.vis_name, self.profiles, output_dir)
+
 
     def get_cluster_prob(self):
         output_dir_cluster_prob = self.output_dir / "cluster_prob"
@@ -141,11 +150,13 @@ class ClusterMapper:
             gene_weights = spatial_weights
         else:
             gene_weights = np.ones(len(self.gene_list))
-        assign_clusters(self.spatial_expr_df, self.gene_list, self.profiles, output_dir_cluster_prob, self.atlas_config["cluster_column"], gene_weights, False, output_dir_cluster_prob)
+        self.cluster_prob_df = assign_clusters(self.spatial_expr_df, self.gene_list, self.profiles, output_dir_cluster_prob, self.atlas_config["cluster_column"], gene_weights, False, output_dir_cluster_prob)
 
+        result_df = self.cluster_prob_df.copy()
 
-    def visualize_result(self):
-        pass
+        result_df["most probable cluster"] = result_df.idxmax(axis=1)
 
-    def write_result(self):
-        pass
+        result_df.to_csv(output_dir_cluster_prob / "cluster_probability.tsv", sep="\t")
+
+        visualize_assignment(self.cluster_prob_df, output_dir_cluster_prob)
+

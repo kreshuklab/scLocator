@@ -81,7 +81,7 @@ def preprocess_spatial_expr_df(
     logging.info("Normalized expression df stats\n" + repr(df_norm_expr.describe().T))
     logging.info("Binarized expression df stats\n" + repr(df_bin_expr.describe().T))
 
-    if False:
+    if visualize:
         plt.figure(figsize=(10, 1 * len(df_expr.columns)))
         sns.stripplot(df_expr, jitter=0.4, alpha=0.6, orient="h")
         plt.title("Distribution of raw counts")
