@@ -1,0 +1,14 @@
+name: sclocator_env
+channels:
+  - nodefaults
+  - conda-forge
+dependencies:
+  - python>=3.11
+  - scanpy>=1.11
+  - scikit-image
+  - leidenalg
+  - python-igraph
+  - jupyter
+  - pip
+  - pip:
+      - -e .
