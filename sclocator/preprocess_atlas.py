@@ -130,9 +130,10 @@ def get_cluster_profiles(adata, cluster_column, output_dir, norm_per_gene, base_
         nonzero_counts = adata_aggregated[cluster_name, :].layers["count_nonzero"]
 
         # This ensures P is never exactly 0 or 1.
-        profiles[cluster_name] = (nonzero_counts + base_prob) / (
-            cluster_sizes[cluster_name] + 2 * base_prob
-        )
+        # profiles[cluster_name] = (nonzero_counts + base_prob) / (
+        #     cluster_sizes[cluster_name] + 2 * base_prob
+        # )
+        profiles[cluster_name] = nonzero_counts * (1 - 2 * base_prob) / cluster_sizes[cluster_name] + base_prob
         profiles[cluster_name] = np.array(profiles[cluster_name]).flatten()
 
         max_expr_prob = np.maximum(max_expr_prob, profiles[cluster_name])
