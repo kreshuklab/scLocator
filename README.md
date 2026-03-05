@@ -1,6 +1,10 @@
 # scLocator
 Mapping scRNAseq clusters to images via spatial transcriptomics
 
+## Installation
+```
+conda env create -f environment.yml
+```
 
 ## Algorithm
 

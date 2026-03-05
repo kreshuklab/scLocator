@@ -9,6 +9,7 @@ dependencies:
   - leidenalg
   - python-igraph
   - jupyter
+  - click
   - pip
   - pip:
       - -e .
