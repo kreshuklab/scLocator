@@ -7,6 +7,7 @@ import sys
 import pandas as pd
 import numpy as np
 import scanpy as sc
+import anndata
 
 from sclocator.preprocess_spatial_data import (
     preprocess_spatial_expr_df,
@@ -58,6 +59,9 @@ class ClusterMapper:
             datefmt="%Y-%m-%d %H:%M:%S",
         )
         logging.info(f"Finished setup with config at {config_path}")
+
+        # Set this to support Scanpy 1.12
+        anndata.settings.allow_write_nullable_strings = True
 
     def run_analysis(self):
         logging.info(f"Start analysis")
