@@ -259,9 +259,7 @@ def test_profile_quality(profiles, output_dir, n_samples=10000):
     counts = []
     cluster_names = []
     for name, profile  in profiles.items():
-        print(name)
         synthetic_expr_df = pd.DataFrame(np.array([np.random.binomial(1, p, n_samples) for p in profile]).T)
-        print("synthetic expr shape", synthetic_expr_df.shape)
         
         result_df = get_cluster_probabilities(profiles, synthetic_expr_df, np.ones(len(profile)))
 
