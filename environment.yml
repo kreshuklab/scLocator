@@ -9,6 +9,7 @@ dependencies:
   - leidenalg
   - python-igraph
   - jupyter
+  - fastcluster
   - click
   - pip
   - pip:
