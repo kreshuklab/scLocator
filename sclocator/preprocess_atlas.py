@@ -152,7 +152,7 @@ def get_cluster_profiles(adata, cluster_column, output_dir, norm_per_gene, base_
     profiles["zero"] = np.zeros(adata.shape[1]) + delta
 
     # Create profile that expresses everything for the autofluorescent areas
-    profiles["autofluorescence"] = np.ones(adata.shape[1]) - 0.01
+    profiles["autofluorescence"] = np.ones(adata.shape[1]) - base_prob
 
     output_file = output_dir / "profiles_dictionary.pkl"
     try:
