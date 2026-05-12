@@ -154,7 +154,15 @@ class ClusterMapper:
             gene_weights = spatial_weights
         else:
             gene_weights = np.ones(len(self.gene_list))
-        self.cluster_prob_df = assign_clusters(self.spatial_expr_df, self.gene_list, self.profiles, output_dir_cluster_prob, self.atlas_config["cluster_column"], gene_weights, False, output_dir_cluster_prob)
+        self.cluster_prob_df = assign_clusters(
+            self.spatial_expr_df,
+            self.gene_list, 
+            self.profiles, 
+            output_dir_cluster_prob, 
+            self.atlas_config["cluster_column"], 
+            gene_weights, 
+            self.diagnostics, 
+            output_dir_cluster_prob)
 
         result_df = self.cluster_prob_df.copy()
 

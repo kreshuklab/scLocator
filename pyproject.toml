@@ -9,6 +9,8 @@ dependencies = [
 
 [project.scripts]
 sclocator = "sclocator.run_mapping:main"
+sclocator-inspect-cell = "sclocator.diagnose_cell_assignment:main"
+sclocator-inspect-clusters = "sclocator.cluster_diagnostics:main"
 
 [build-system]
 requires = ["flit_core<4"]
