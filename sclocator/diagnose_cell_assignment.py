@@ -28,7 +28,7 @@ def load_data(base_dir: Path, target_id: float):
     df_expr.index = df_expr.index.astype(float)
     
     # Load assignments
-    df_assign = pd.read_csv(assign_path, sep=r'\s+', index_col='label_id')
+    df_assign = pd.read_csv(assign_path, sep='\t', index_col='label_id')
     df_assign.index = df_assign.index.astype(float)
     
     # Load profiles
